@@ -3,6 +3,8 @@
 
 # rmf_traffic\_editor
 
+This is a fork from osrf rmf project, modified to add location of tag objects for localization within a building
+
 Welcome!
 
 ![](docs/rmf_traffic_editor_gui.png)
