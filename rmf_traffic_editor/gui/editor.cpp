@@ -42,6 +42,7 @@
 #include "actions/add_property.h"
 #include "actions/add_polygon.h"
 #include "actions/add_vertex.h"
+#include "actions/add_tag.h"
 #include "actions/delete.h"
 #include "actions/polygon_add_vertex.h"
 #include "actions/polygon_remove_vertices.h"
@@ -374,6 +375,7 @@ Editor::Editor()
   create_tool_button(TOOL_MOVE, ":icons/move.svg", "Move (M)");
   create_tool_button(TOOL_ROTATE, ":icons/rotate.svg", "Rotate (R)");
   create_tool_button(TOOL_ADD_VERTEX, ":icons/vertex.svg", "Add Vertex (V)");
+  create_tool_button(TOOL_ADD_TAG, ":icons/signage.svg", "Add Tag (A)");
   create_tool_button(TOOL_ADD_FEATURE, ":icons/feature.svg", "Add Feature");
   create_tool_button(TOOL_ADD_CONSTRAINT,
     ":icons/constraint.svg",
@@ -876,6 +878,7 @@ void Editor::mouse_event(const MouseType t, QMouseEvent* e)
     case TOOL_ADD_FIDUCIAL: mouse_add_fiducial(t, e, p); break;
     case TOOL_ADD_ROI:      mouse_add_roi(t, e, p); break;
     case TOOL_ADD_HUMAN_LANE: mouse_add_human_lane(t, e, p); break;
+    case TOOL_ADD_TAG:   mouse_add_tag(t, e, p); break;
 
     default: break;
   }
@@ -942,6 +945,10 @@ void Editor::keyPressEvent(QKeyEvent* e)
     case Qt::Key_V:
       clear_current_tool_buffer();
       tool_button_group->button(TOOL_ADD_VERTEX)->click();
+      break;
+    case Qt::Key_A:
+      clear_current_tool_buffer();
+      tool_button_group->button(TOOL_ADD_TAG)->click();
       break;
     case Qt::Key_M:
       clear_current_tool_buffer();
@@ -1017,6 +1024,7 @@ const QString Editor::tool_id_to_string(const int id)
     case TOOL_EDIT_POLYGON: return "&edit polygon";
     case TOOL_ADD_HUMAN_LANE: return "add human lane";
     case TOOL_ADD_FEATURE: return "add &feature";
+    case TOOL_ADD_TAG: return "add &tag";
     default: return "unknown tool ID";
   }
 }
@@ -1144,6 +1152,16 @@ void Editor::update_property_editor()
     }
   }
 
+  for (size_t i = 0; i < building.levels[level_idx].tags.size(); i++)
+  {
+    const Tag& t = building.levels[level_idx].tags[i];
+    if (t.selected)
+    {
+      populate_property_editor(t, i);
+      return;  // stop after finding the first one
+    }
+  }
+
   for (const auto& feature : building.levels[level_idx].floorplan_features)
   {
     if (feature.selected())
@@ -1248,13 +1266,36 @@ void Editor::add_param_button_clicked()
       &building,
       dialog.get_param_name(),
       Param(dialog.get_param_type()),
-      level_idx
+      level_idx, 
+      false
     );
 
     undo_stack.push(cmd);
     auto updated_id = cmd->get_vertex_updated();
     populate_property_editor(
       building.levels[level_idx].vertices[updated_id],
+      updated_id);
+    setWindowModified(true);
+  }
+
+  if (object_type == "tag")
+  {
+    AddParamDialog dialog(this, Tag::allowed_params);
+    if (dialog.exec() != QDialog::Accepted)
+      return;
+
+    AddPropertyCommand* cmd = new AddPropertyCommand(
+      &building,
+      dialog.get_param_name(),
+      Param(dialog.get_param_type()),
+      level_idx,
+      true
+    );
+    printf("AddPropertyCommand");
+    undo_stack.push(cmd);
+    auto updated_id = cmd->get_tag_updated();
+    populate_property_editor(
+      building.levels[level_idx].tags[updated_id],
       updated_id);
     setWindowModified(true);
   }
@@ -1409,6 +1450,42 @@ void Editor::populate_property_editor(const Vertex& vertex, const int index)
 
   add_param_button->setEnabled(true);
   add_param_button->setProperty("object_type", QVariant("vertex"));
+
+  property_editor->blockSignals(false);  // re-enable callbacks
+}
+
+void Editor::populate_property_editor(const Tag& tag, const int index)
+{
+  const Level& level = building.levels[level_idx];
+  const double scale = level.drawing_meters_per_pixel;
+
+  property_editor->blockSignals(true);  // otherwise we get tons of callbacks
+  property_editor->setRowCount(6 + tag.params.size());
+
+  property_editor_set_row(0, "index", index);
+  property_editor_set_row(1, "x (pixels)", tag.x, 3, true);
+  property_editor_set_row(2, "y (pixels)", tag.y, 3, true);
+  property_editor_set_row(3, "x (m)", tag.x * scale);
+  property_editor_set_row(4, "y (m)", -1.0 * tag.y * scale);
+  property_editor_set_row(
+    5,
+    "name",
+    QString::fromStdString(tag.name),
+    true);
+
+  int row = 6;
+  for (const auto& param : tag.params)
+  {
+    property_editor_set_row(
+      row,
+      QString::fromStdString(param.first),
+      param.second.to_qstring(),
+      true);
+    row++;
+  }
+
+  add_param_button->setEnabled(true);
+  add_param_button->setProperty("object_type", QVariant("tag"));
 
   property_editor->blockSignals(false);  // re-enable callbacks
 }
@@ -1651,6 +1728,7 @@ void Editor::remove_mouse_motion_item()
   mouse_motion_editor_model = nullptr;
 
   mouse_vertex_idx = -1;
+  mouse_tag_idx = -1;
   mouse_fiducial_idx = -1;
   mouse_feature_idx = -1;
   mouse_feature_layer_idx = -1;
@@ -1696,6 +1774,24 @@ void Editor::mouse_add_vertex(
   {
     undo_stack.push(
       new AddVertexCommand(
+        &building,
+        level_idx,
+        p.x(),
+        p.y()));
+    setWindowModified(true);
+    create_scene();
+  }
+}
+
+void Editor::mouse_add_tag(
+  const MouseType t,
+  QMouseEvent*,
+  const QPointF& p)
+{
+  if (t == MOUSE_PRESS)
+  {
+    undo_stack.push(
+      new AddTagCommand(
         &building,
         level_idx,
         p.x(),
@@ -1786,6 +1882,15 @@ void Editor::mouse_move(
         level_idx,
         mouse_vertex_idx);
     }
+    else if (ni.tag_idx >= 0 && ni.tag_dist < 10.0)
+    {
+      mouse_tag_idx = ni.tag_idx;
+
+      latest_move_vertex = new MoveVertexCommand(
+        &building,
+        level_idx,
+        mouse_tag_idx);
+    }
     else if (ni.feature_idx >= 0 &&
       ni.feature_layer_idx >= 0 &&
       ni.feature_dist < 10.0)
@@ -1821,6 +1926,19 @@ void Editor::mouse_move(
       {
         delete latest_move_vertex;
         latest_move_vertex = NULL;
+      }
+    }
+
+    if (mouse_tag_idx >= 0) //Add mouse move tag.
+    {
+      if (latest_move_tag->has_moved)
+      {
+        undo_stack.push(latest_move_tag);
+      }
+      else
+      {
+        delete latest_move_tag;
+        latest_move_tag = NULL;
       }
     }
 
@@ -1863,6 +1981,7 @@ void Editor::mouse_move(
       }
     }
     mouse_vertex_idx = -1;
+    mouse_tag_idx = -1;
     mouse_feature_idx = -1;
     mouse_feature_layer_idx = -1;
     mouse_fiducial_idx = -1;

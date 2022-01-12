@@ -70,6 +70,7 @@ public:
   void add_level(const Level& level);
 
   void add_vertex(int level_index, double x, double y);
+  void add_tag(int level_index, double x, double y);
   QUuid add_fiducial(int level_index, double x, double y);
   QUuid add_feature(int level, int layer, double x, double y);
   void remove_feature(const int level, const int layer, QUuid feature_uuid);

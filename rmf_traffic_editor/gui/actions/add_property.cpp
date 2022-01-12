@@ -20,18 +20,32 @@ AddPropertyCommand::AddPropertyCommand(
   Building* building,
   std::string property,
   Param value,
-  int level_idx)
+  int level_idx, 
+  bool is_tag)
 {
   _building = building;
   _prop = property;
   _val = value;
   _level_idx = level_idx;
   _vert_id = -1;
+  _tag_id = -1;
+  _is_tag = is_tag;
 
-  for (size_t i = 0; i < building->levels[level_idx].vertices.size(); i++)
+  if (_is_tag)
   {
-    if (building->levels[level_idx].vertices[i].selected)
-      _vert_id = i;
+    for (size_t i = 0; i < building->levels[level_idx].tags.size(); i++)
+    {
+      if (building->levels[level_idx].tags[i].selected)
+        _tag_id = i;
+    }
+  }
+  else
+  {
+    for (size_t i = 0; i < building->levels[level_idx].vertices.size(); i++)
+    {
+      if (building->levels[level_idx].vertices[i].selected)
+        _vert_id = i;
+    }
   }
 }
 
@@ -45,19 +59,45 @@ int AddPropertyCommand::get_vertex_updated()
   return _vert_id;
 }
 
+int AddPropertyCommand::get_tag_updated()
+{
+  return _tag_id;
+}
+
 void AddPropertyCommand::redo()
 {
-  if (_vert_id < 0)
-    return;
+  if (_is_tag)
+  {
+    if (_tag_id < 0)
+      return;
 
-  _building->levels[_level_idx].vertices[_vert_id].params[_prop] = _val;
+    _building->levels[_level_idx].tags[_tag_id].params[_prop] = _val;
+  }
+  else
+  {
+    if (_vert_id < 0)
+      return;
+
+    _building->levels[_level_idx].vertices[_vert_id].params[_prop] = _val;
+  }
 }
 
 void AddPropertyCommand::undo()
 {
-  auto v = _building->levels[_level_idx].vertices[_vert_id];
-  if (v.params.count(_prop) == 0)
-    return;
+  if (_is_tag)
+  {
+    auto t = _building->levels[_level_idx].tags[_tag_id];
+    if (t.params.count(_prop) == 0)
+      return;
 
-  _building->levels[_level_idx].vertices[_vert_id].params.erase(_prop);
+    _building->levels[_level_idx].tags[_tag_id].params.erase(_prop);
+  }
+  else
+  {
+    auto v = _building->levels[_level_idx].vertices[_vert_id];
+    if (v.params.count(_prop) == 0)
+      return;
+
+    _building->levels[_level_idx].vertices[_vert_id].params.erase(_prop);
+  }
 }

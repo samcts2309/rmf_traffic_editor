@@ -36,6 +36,7 @@
 #include "actions/move_fiducial.h"
 #include "actions/move_model.h"
 #include "actions/move_vertex.h"
+#include "actions/move_tag.h"
 #include "actions/rotate_model.h"
 #include "building.h"
 #include "editor_model.h"
@@ -124,6 +125,7 @@ private:
     TOOL_ADD_ROI,
     TOOL_ADD_HOLE,
     TOOL_ADD_HUMAN_LANE,
+    TOOL_ADD_TAG,
   } tool_id = TOOL_SELECT;
 
   std::map<ToolId, QAction*> tools;
@@ -217,6 +219,7 @@ private:
   void populate_property_editor(const Edge& edge);
   void populate_property_editor(const Model& model);
   void populate_property_editor(const Vertex& vertex, const int index);
+  void populate_property_editor(const Tag& tag, const int index);
   void populate_property_editor(const Feature& feature);
   void populate_property_editor(const Fiducial& fiducial);
   void populate_property_editor(const Polygon& polygon);
@@ -283,6 +286,7 @@ private:
 
   int mouse_model_idx = -1;
   int mouse_vertex_idx = -1;
+  int mouse_tag_idx = -1;
   int mouse_feature_idx = -1;
   int mouse_feature_layer_idx = -1;
   int mouse_fiducial_idx = -1;
@@ -339,6 +343,7 @@ private:
   void mouse_add_floor(const MouseType t, QMouseEvent* e, const QPointF& p);
   void mouse_add_hole(const MouseType t, QMouseEvent* e, const QPointF& p);
   void mouse_add_roi(const MouseType t, QMouseEvent* e, const QPointF& p);
+  void mouse_add_tag(const MouseType t, QMouseEvent* e, const QPointF& p);
   void mouse_edit_polygon(const MouseType t, QMouseEvent* e, const QPointF& p);
 
   void mouse_add_human_lane(const MouseType t, QMouseEvent* e,
@@ -357,6 +362,7 @@ private:
   MoveFiducialCommand* latest_move_fiducial = nullptr;
   MoveModelCommand* latest_move_model = nullptr;
   MoveVertexCommand* latest_move_vertex = nullptr;
+  MoveTagCommand* latest_move_tag = nullptr;
   RotateModelCommand* latest_rotate_model = nullptr;
 
   void sanity_check();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Open Source Robotics Foundation
+ * Copyright (C) 2019-2020 Open Source Robotics Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,30 @@
  * limitations under the License.
  *
 */
-#ifndef _ADD_PROPERTY_H_
-#define _ADD_PROPERTY_H_
+
+#ifndef MOVE_TAG_H
+#define MOVE_TAG_H
 
 #include <QUndoCommand>
 #include "building.h"
+#include "tag.h"
 
-class AddPropertyCommand : public QUndoCommand
+class MoveTagCommand : public QUndoCommand
 {
 public:
-  AddPropertyCommand(Building* building,
-    std::string property,
-    Param value,
-    int level_idx, 
-    bool is_tag);
-  virtual ~AddPropertyCommand();
-  int get_vertex_updated();
-  int get_tag_updated();
+  bool has_moved;
+  MoveTagCommand(Building* building, int level_idx, int mouse_vertex_idx);
+  virtual ~MoveTagCommand();
+
+  void set_final_destination(double x, double y);
   void undo() override;
   void redo() override;
 
 private:
   Building* _building;
-  std::string _prop;
-  Param _val;
-  int _vert_id, _level_idx, _tag_id;
-  bool _is_tag;
+  int _level_idx;
+  Tag _to_move;
+  double _x, _y;
 };
+
 #endif

@@ -37,6 +37,13 @@ void DeleteCommand::undo()
       _vertices[i]);
   }
 
+  for (size_t i = 0; i < _tags.size(); i++)
+  {
+    _building->levels[_level_idx].tags.insert(
+      _building->levels[_level_idx].tags.begin() + _tag_idx[i],
+      _tags[i]);
+  }
+
   for (size_t i = 0; i < _edges.size(); i++)
   {
     _building->levels[_level_idx].edges.insert(
@@ -93,6 +100,8 @@ void DeleteCommand::undo()
 
   _vertices.clear();
   _vertex_idx.clear();
+  _tags.clear();
+  _tag_idx.clear();
   _edges.clear();
   _edge_idx.clear();
   _models.clear();
@@ -129,6 +138,14 @@ void DeleteCommand::redo()
         _building->levels[_level_idx].vertices[item.vertex_idx]
       );
       _vertex_idx.push_back(item.vertex_idx);
+    }
+
+    if (item.tag_idx >= 0)
+    {
+      _tags.push_back(
+        _building->levels[_level_idx].tags[item.tag_idx]
+      );
+      _tag_idx.push_back(item.tag_idx);
     }
 
     if (item.fiducial_idx >= 0)

@@ -33,6 +33,7 @@
 #include "polygon.h"
 #include "rendering_options.h"
 #include "vertex.h"
+#include "tag.h"
 
 #include <QPixmap>
 #include <QPainterPath>
@@ -50,6 +51,7 @@ public:
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
   std::vector<Polygon> polygons;
+  std::vector<Tag> tags;
 
   std::vector<Layer> layers;
   bool are_layer_names_unique();
@@ -65,6 +67,9 @@ public:
 
   void add_vertex(const double x, const double y);
   std::size_t get_vertex_by_id(QUuid vertex_id);
+
+  void add_tag(const double x, const double y);
+  std::size_t get_tag_by_id(QUuid tag_id);
 
   std::string drawing_filename;
   int drawing_width = 0;
@@ -111,6 +116,9 @@ public:
     double vertex_dist = 1e100;
     int vertex_idx = -1;
 
+    double tag_dist = 1e100;
+    int tag_idx = -1;
+
     double feature_dist = 1e100;
     int feature_layer_idx = -1;
     int feature_idx = -1;
@@ -146,6 +154,7 @@ public:
     int feature_idx = -1;
     int feature_layer_idx = -1;
     int constraint_idx = -1;
+    int tag_idx = -1;
   };
 
   bool can_delete_current_selection();
@@ -204,6 +213,8 @@ private:
     const Edge::Type type);
 
   bool parse_vertices(const YAML::Node& _data);
+
+  bool parse_tags(const YAML::Node& _data);
 
   bool _drawing_visible = true;
 

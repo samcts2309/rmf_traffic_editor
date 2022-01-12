@@ -15,6 +15,8 @@ public:
 private:
   std::vector<Vertex> _vertices;
   std::vector<int> _vertex_idx;
+  std::vector<Tag> _tags;
+  std::vector<int> _tag_idx;
   std::vector<Edge> _edges;
   std::vector<int> _edge_idx;
   std::vector<Model> _models;

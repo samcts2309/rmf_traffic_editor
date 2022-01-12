@@ -40,11 +40,13 @@ set(gui_sources
   gui/actions/add_polygon.cpp
   gui/actions/add_property.cpp
   gui/actions/add_vertex.cpp
+  gui/actions/add_tag.cpp
   gui/actions/delete.cpp
   gui/actions/move_feature.cpp
   gui/actions/move_fiducial.cpp
   gui/actions/move_model.cpp
   gui/actions/move_vertex.cpp
+  gui/actions/move_tag.cpp
   gui/actions/polygon_remove_vertices.cpp
   gui/actions/polygon_add_vertex.cpp
   gui/actions/rotate_model.cpp
@@ -82,6 +84,7 @@ set(gui_sources
   gui/traffic_map.cpp
   gui/transform.cpp
   gui/vertex.cpp
+  gui/tag.cpp
   gui/yaml_utils.cpp
 
   #crowd_sim related

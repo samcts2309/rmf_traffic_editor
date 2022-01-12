@@ -226,6 +226,9 @@ YAML::Node Level::to_yaml() const
   for (const auto& v : vertices)
     y["vertices"].push_back(v.to_yaml());
 
+  for (const auto& t : tags)
+    y["tags"].push_back(t.to_yaml());
+
   for (const auto& feature : floorplan_features)
     y["features"].push_back(feature.to_yaml());
 
@@ -528,6 +531,17 @@ void Level::get_selected_items(
       items.push_back(item);
     }
   }
+
+  for (std::size_t i = 0; i < tags.size(); i++)
+  {
+    if (tags[i].selected)
+    {
+      Level::SelectedItem item;
+      item.tag_idx = i;
+      items.push_back(item);
+    }
+  }
+
 
   for (std::size_t i = 0; i < fiducials.size(); i++)
   {
@@ -1073,6 +1087,9 @@ void Level::clear_selection()
   for (auto& vertex : vertices)
     vertex.selected = false;
 
+  for (auto& tag : tags)
+    tag.selected = false;
+
   for (auto& edge : edges)
     edge.selected = false;
 
@@ -1169,6 +1186,13 @@ void Level::draw(
 
   for (const auto& v : vertices)
     v.draw(
+      scene,
+      vertex_radius / drawing_meters_per_pixel,
+      vertex_name_font,
+      coordinate_system);
+
+  for (const auto& t : tags)
+    t.draw(
       scene,
       vertex_radius / drawing_meters_per_pixel,
       vertex_name_font,
@@ -1479,6 +1503,7 @@ Polygon::EdgeDragPolygon Level::polygon_edge_drag_press(
   return edp;
 }
 
+// Vertices
 bool Level::parse_vertices(const YAML::Node& _data)
 {
   if (_data["vertices"] && _data["vertices"].IsSequence())
@@ -1510,6 +1535,41 @@ std::size_t Level::get_vertex_by_id(QUuid vertex_id)
   }
   return vertices.size()+1;
 }
+// Vertices End
+
+// Tags
+bool Level::parse_tags(const YAML::Node& _data)
+{
+  if (_data["tags"] && _data["tags"].IsSequence())
+  {
+    const YAML::Node& pts = _data["tags"];
+    for (YAML::const_iterator it = pts.begin(); it != pts.end(); ++it)
+    {
+      Tag t;
+      t.from_yaml(*it);
+      tags.push_back(t);
+    }
+  }
+  return true;
+}
+
+void Level::add_tag(const double x, const double y)
+{
+  tags.push_back(Tag(x, y));
+}
+
+std::size_t Level::get_tag_by_id(QUuid tag_id)
+{
+  for (std::size_t i = 0; i < tags.size(); i++)
+  {
+    if (tags[i].uuid == tag_id)
+    {
+      return i;
+    }
+  }
+  return tags.size()+1;
+}
+// Tags End
 
 bool Level::are_layer_names_unique()
 {
@@ -1872,6 +1932,8 @@ void Level::mouse_select_press(
     models[ni.model_idx].selected = true;
   else if (ni.vertex_idx >= 0 && ni.vertex_dist < vertex_dist_thresh)
     vertices[ni.vertex_idx].selected = true;
+  else if (ni.tag_idx >= 0 && ni.tag_dist < vertex_dist_thresh)
+    tags[ni.tag_idx].selected = true;
   else if (ni.feature_idx >= 0 && ni.feature_dist < feature_dist_thresh)
   {
     //levels[level_idx].feature_sets[
@@ -1932,6 +1994,19 @@ Level::NearestItem Level::nearest_items(const double x, const double y)
     {
       ni.vertex_dist = dist;
       ni.vertex_idx = i;
+    }
+  }
+
+  for (std::size_t i = 0; i < tags.size(); i++)
+  {
+    const Tag& p = tags[i];
+    const double dx = x - p.x;
+    const double dy = y - p.y;
+    const double dist = sqrt(dx*dx + dy*dy);
+    if (dist < ni.tag_dist)
+    {
+      ni.tag_dist = dist;
+      ni.tag_idx = i;
     }
   }
 

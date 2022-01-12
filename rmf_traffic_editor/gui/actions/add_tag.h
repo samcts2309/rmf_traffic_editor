@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Open Source Robotics Foundation
+ * Copyright (C) 2019-2020 Open Source Robotics Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,30 @@
  * limitations under the License.
  *
 */
-#ifndef _ADD_PROPERTY_H_
-#define _ADD_PROPERTY_H_
+
+#ifndef _ADD_TAG_H_
+#define _ADD_TAG_H_
 
 #include <QUndoCommand>
 #include "building.h"
 
-class AddPropertyCommand : public QUndoCommand
+class AddTagCommand : public QUndoCommand
 {
 public:
-  AddPropertyCommand(Building* building,
-    std::string property,
-    Param value,
-    int level_idx, 
-    bool is_tag);
-  virtual ~AddPropertyCommand();
-  int get_vertex_updated();
-  int get_tag_updated();
+  AddTagCommand(
+    Building* building,
+    int level_idx,
+    double x,
+    double y);
+  virtual ~AddTagCommand();
   void undo() override;
   void redo() override;
 
 private:
   Building* _building;
-  std::string _prop;
-  Param _val;
-  int _vert_id, _level_idx, _tag_id;
-  bool _is_tag;
+  double _x, _y;
+  int _level_idx;
+  QUuid _tag_id;
 };
+
 #endif
